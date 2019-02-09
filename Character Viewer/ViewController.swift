@@ -53,7 +53,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         navigationItem.searchController = search
         self.definesPresentationContext = true
         navigationItem.hidesSearchBarWhenScrolling = false
-
+        
         getDataFromURL()
         #if TheWire
         self.title = "The Wire Character Viewer"
@@ -65,9 +65,9 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         
-        notificationObserver = NotificationCenter.default.addObserver(forName: NSNotification.Name(rawValue: "dataResponseReceived"), object: nil, queue: OperationQueue.main) { (Notification) in
-            self.viewerTableView.reloadData()
-            self.viewerCollectionView.reloadData()
+        notificationObserver = NotificationCenter.default.addObserver(forName: NSNotification.Name(rawValue: "dataResponseReceived"), object: nil, queue: OperationQueue.main) { [weak self] (Notification) in
+            self?.viewerTableView.reloadData()
+            self?.viewerCollectionView.reloadData()
             print("Table and collection has Reloaded")
         }
     }
@@ -101,15 +101,18 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
                     cell.detailTextLabel?.numberOfLines = 0
                     cell.detailTextLabel?.lineBreakMode = .byWordWrapping
                 }
-                if let imageDict = dict.Icon, let url = URL(string: (imageDict.URL)!), let imageData = try? Data(contentsOf: url){
-                    cell.imageView?.image = UIImage(data: imageData)
-                    let itemSize = CGSize.init(width: 40, height: 40)
-                    UIGraphicsBeginImageContextWithOptions(itemSize, false, UIScreen.main.scale);
-                    let imageRect = CGRect.init(origin: CGPoint.zero, size: itemSize)
-                    cell.imageView?.image?.draw(in: imageRect)
-                    cell.imageView?.image = UIGraphicsGetImageFromCurrentImageContext()!;
-                    UIGraphicsEndImageContext();
-                } else {
+                if let imageDict = dict.Icon, let url = URL(string: (imageDict.URL)!) {
+                    DispatchQueue.global(qos: .userInitiated).async {
+                        if let imageData = try? Data(contentsOf: url) {
+                            DispatchQueue.main.async {
+                                cell.imageView?.image = UIImage(data: imageData)
+                                let itemSize = CGSize.init(width: 40, height: 40)
+                                UIGraphicsBeginImageContextWithOptions(itemSize, false, UIScreen.main.scale);
+                                let imageRect = CGRect.init(origin: CGPoint.zero, size: itemSize)
+                                cell.imageView?.image?.draw(in: imageRect)
+                                cell.imageView?.image = UIGraphicsGetImageFromCurrentImageContext()!;
+                                UIGraphicsEndImageContext();
+                            }}}} else {
                     #if TheWire
                     cell.imageView?.image = UIImage(named: "TheWire")
                     #else
@@ -121,9 +124,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
                     cell.imageView?.image?.draw(in: imageRect)
                     cell.imageView?.image = UIGraphicsGetImageFromCurrentImageContext()!;
                     UIGraphicsEndImageContext();
-                }
-            }
-        }
+                }}}
         
         return cell
     }
@@ -143,18 +144,18 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         if let characterCell = cell as? CharacterCollectionViewCell {
             if !filteredcharacterListArray.isEmpty {
                 if let dict: Character = filteredcharacterListArray[indexPath.row] as? Character {
-                    if let imageDict = dict.Icon, let url = URL(string: (imageDict.URL)!), let imageData = try? Data(contentsOf: url) {
-                        characterCell.characterImageView?.image = UIImage(data: imageData)
-                    } else {
+                    if let imageDict = dict.Icon, let url = URL(string: (imageDict.URL)!) {
+                        DispatchQueue.global(qos: .userInitiated).async {
+                            if let imageData = try? Data(contentsOf: url) {
+                                DispatchQueue.main.async {
+                                    characterCell.characterImageView?.image = UIImage(data: imageData)
+                                }}}} else {
                         #if TheWire
                         characterCell.characterImageView?.image = UIImage(named: "TheWire")
                         #else
                         characterCell.characterImageView?.image = UIImage(named: "TheSimpsons")
                         #endif
-                    }
-                }
-            }
-        }
+                    }}}}
         
         return cell
     }
@@ -168,7 +169,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         let cellWidth = (collectionView.bounds.size.width - 30) / 3
         return CGSize(width: CGFloat(cellWidth), height: CGFloat(cellHeight))
     }
- 
+    
     //MARK: SearchController
     func updateSearchResults(for searchController: UISearchController) {
         if let text = searchController.searchBar.text, text.count > 0 {

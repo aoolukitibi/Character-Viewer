@@ -13,7 +13,7 @@ class CharacterDetailViewController: UIViewController {
     @IBOutlet weak var characterImageView: UIImageView!
     @IBOutlet weak var characterTitleLabel: UILabel!
     @IBOutlet weak var characterDescriptionLabel: UILabel!
-        
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         updateDetailView()        
@@ -28,18 +28,16 @@ class CharacterDetailViewController: UIViewController {
                     self.title = String(titleAndDescription[..<endIndex])
                 }
                 if let imageDict = dict.Icon, let url = URL(string: (imageDict.URL)!) {
-                    if let imageData = try? Data(contentsOf: url) {
-                        characterImageView?.image = UIImage(data: imageData)
-                    }
-                } else {
+                    DispatchQueue.global(qos: .userInitiated).async {
+                        if let imageData = try? Data(contentsOf: url) {
+                            DispatchQueue.main.async { [weak self] in
+                                self?.characterImageView?.image = UIImage(data: imageData)
+                            }}}} else {
                     #if TheWire
                     characterImageView?.image = UIImage(named: "TheWire")
                     #else
                     characterImageView?.image = UIImage(named: "TheSimpsons")
                     #endif
-                }
-            }
-        }
-    }
+                }}}}
     
 }
