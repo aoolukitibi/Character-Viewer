@@ -37,6 +37,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     }
     
     var notificationObserver: NSObjectProtocol?
+    var imageUrlString: String?
     
     override func awakeFromNib() {
         splitViewController?.delegate = self
@@ -102,28 +103,26 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
                     cell.detailTextLabel?.lineBreakMode = .byWordWrapping
                 }
                 if let imageDict = dict.Icon, let url = URL(string: (imageDict.URL)!) {
-                    DispatchQueue.global(qos: .userInitiated).async {
-                        if let imageData = try? Data(contentsOf: url) {
-                            DispatchQueue.main.async {
-                                cell.imageView?.image = UIImage(data: imageData)
-                                let itemSize = CGSize.init(width: 40, height: 40)
-                                UIGraphicsBeginImageContextWithOptions(itemSize, false, UIScreen.main.scale);
-                                let imageRect = CGRect.init(origin: CGPoint.zero, size: itemSize)
-                                cell.imageView?.image?.draw(in: imageRect)
-                                cell.imageView?.image = UIGraphicsGetImageFromCurrentImageContext()!;
-                                UIGraphicsEndImageContext();
-                            }}}} else {
+                    imageUrlString = imageDict.URL
+                    if let imageFromCache = imageCache.object(forKey: imageDict.URL as AnyObject) {
+                        cell.imageView?.image = UIImage(data: imageFromCache as! Data)
+                        setCellImageSize(cell: cell)
+                    } else {
+                        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+                            if let imageData = try? Data(contentsOf: url) {
+                                imageCache.setObject(imageData as AnyObject, forKey: imageDict.URL as AnyObject)
+                                DispatchQueue.main.async {
+                                    if self?.imageUrlString == imageDict.URL {
+                                        cell.imageView?.image = UIImage(data: imageData)
+                                    }
+                                    self?.setCellImageSize(cell: cell)
+                                }}}}} else {
                     #if TheWire
                     cell.imageView?.image = UIImage(named: "TheWire")
                     #else
                     cell.imageView?.image = UIImage(named: "TheSimpsons")
                     #endif
-                    let itemSize = CGSize.init(width: 40, height: 40)
-                    UIGraphicsBeginImageContextWithOptions(itemSize, false, UIScreen.main.scale);
-                    let imageRect = CGRect.init(origin: CGPoint.zero, size: itemSize)
-                    cell.imageView?.image?.draw(in: imageRect)
-                    cell.imageView?.image = UIGraphicsGetImageFromCurrentImageContext()!;
-                    UIGraphicsEndImageContext();
+                    setCellImageSize(cell: cell)
                 }}}
         
         return cell
@@ -131,6 +130,15 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         characterIndex = indexPath.row
+    }
+    
+    func setCellImageSize(cell: UITableViewCell) {
+        let itemSize = CGSize.init(width: 40, height: 40)
+        UIGraphicsBeginImageContextWithOptions(itemSize, false, UIScreen.main.scale);
+        let imageRect = CGRect.init(origin: CGPoint.zero, size: itemSize)
+        cell.imageView?.image?.draw(in: imageRect)
+        cell.imageView?.image = UIGraphicsGetImageFromCurrentImageContext()!;
+        UIGraphicsEndImageContext();
     }
     
     //MARK: CollectionView
@@ -145,11 +153,18 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
             if !filteredcharacterListArray.isEmpty {
                 if let dict: Character = filteredcharacterListArray[indexPath.row] as? Character {
                     if let imageDict = dict.Icon, let url = URL(string: (imageDict.URL)!) {
-                        DispatchQueue.global(qos: .userInitiated).async {
-                            if let imageData = try? Data(contentsOf: url) {
-                                DispatchQueue.main.async {
-                                    characterCell.characterImageView?.image = UIImage(data: imageData)
-                                }}}} else {
+                        imageUrlString = imageDict.URL
+                        if let imageFromCache = imageCache.object(forKey: imageDict.URL as AnyObject) {
+                            characterCell.characterImageView?.image = UIImage(data: imageFromCache as! Data)
+                        } else {
+                            DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+                                if let imageData = try? Data(contentsOf: url) {
+                                    imageCache.setObject(imageData as AnyObject, forKey: imageDict.URL as AnyObject)
+                                    DispatchQueue.main.async {
+                                        if self?.imageUrlString == imageDict.URL {
+                                            characterCell.characterImageView?.image = UIImage(data: imageData)
+                                        }
+                                    }}}}} else {
                         #if TheWire
                         characterCell.characterImageView?.image = UIImage(named: "TheWire")
                         #else

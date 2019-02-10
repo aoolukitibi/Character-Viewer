@@ -28,11 +28,15 @@ class CharacterDetailViewController: UIViewController {
                     self.title = String(titleAndDescription[..<endIndex])
                 }
                 if let imageDict = dict.Icon, let url = URL(string: (imageDict.URL)!) {
+                    if let imageFromCache = imageCache.object(forKey: imageDict.URL as AnyObject) {
+                        characterImageView?.image = UIImage(data: imageFromCache as! Data)
+                    } else {
                     DispatchQueue.global(qos: .userInitiated).async {
                         if let imageData = try? Data(contentsOf: url) {
+                            imageCache.setObject(imageData as AnyObject, forKey: imageDict.URL as AnyObject)
                             DispatchQueue.main.async { [weak self] in
                                 self?.characterImageView?.image = UIImage(data: imageData)
-                            }}}} else {
+                            }}}}} else {
                     #if TheWire
                     characterImageView?.image = UIImage(named: "TheWire")
                     #else

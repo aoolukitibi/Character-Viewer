@@ -11,6 +11,7 @@ import Foundation
 var characterListArray: Array<Any> = []
 var characterIndex = Int()
 var filteredcharacterListArray: Array<Any> = characterListArray
+let imageCache = NSCache<AnyObject, AnyObject>()
 
 struct CharacterIcon: Decodable {
     let URL: String?
